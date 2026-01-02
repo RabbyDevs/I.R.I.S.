@@ -64,7 +64,9 @@ pub async fn refresh_channel(ctx: Context<'_>) -> Result<(), Error> {
         }) {
             Some((channel_id, _)) => *channel_id,
             None => {
-                let channel = CreateChannel::new("leaks").category(PUBLIC_CATEGORY_ID);
+                let channel = CreateChannel::new("leaks")
+                    .category(PUBLIC_CATEGORY_ID)
+                    .kind(serenity::all::ChannelType::News);
                 let channel = channel.execute(ctx.http(), guild.id).await.unwrap();
                 channel.id
             }

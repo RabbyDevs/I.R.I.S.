@@ -121,6 +121,8 @@ async fn main() {
 
                     clone_msg
                         .execute(ctx.http.clone(), (channel_id, None))
+                        .await?
+                        .crosspost(ctx.http.clone())
                         .await?;
                 }
                 Ok(())
@@ -140,14 +142,16 @@ async fn main() {
                     .get_guild(GuildId::new(GUILD_ID))
                     .await
                     .unwrap();
-                let guild_channels = guild.channels(ctx.http.clone()).await.unwrap();
+                let guild_channels = guild.channels(ctx.http.clone()).await?;
                 let leaks_channel_id = match guild_channels.iter().find(|x| {
                     x.1.name == "leaks" && x.1.parent_id == Some(ChannelId::new(PUBLIC_CATEGORY_ID))
                 }) {
                     Some((channel_id, _)) => *channel_id,
                     None => {
-                        let channel = CreateChannel::new("leaks").category(PUBLIC_CATEGORY_ID);
-                        let channel = channel.execute(ctx.http.clone(), guild.id).await.unwrap();
+                        let channel = CreateChannel::new("leaks")
+                            .category(PUBLIC_CATEGORY_ID)
+                            .kind(serenity::ChannelType::News);
+                        let channel = channel.execute(ctx.http.clone(), guild.id).await?;
                         channel.id
                     }
                 };
