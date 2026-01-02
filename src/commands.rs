@@ -1,11 +1,8 @@
-use std::str::FromStr;
-
 use poise::ChoiceParameter;
-use reqwest::Url;
 use serenity::{
     all::{
-        ActivityData, ActivityType, Attachment, Builder, Channel, ChannelId, CreateAttachment,
-        CreateChannel, CreateMessage, GuildId, OnlineStatus,
+        ActivityData, Attachment, Builder, Channel, ChannelId, CreateAttachment, CreateChannel,
+        CreateMessage, GuildId, OnlineStatus,
     },
     futures::future::join_all,
 };
