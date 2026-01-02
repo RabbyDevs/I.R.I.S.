@@ -1,7 +1,11 @@
+use std::str::FromStr;
+
+use poise::ChoiceParameter;
+use reqwest::Url;
 use serenity::{
     all::{
-        Attachment, Builder, Channel, ChannelId, CreateAttachment, CreateChannel, CreateMessage,
-        GuildId,
+        ActivityData, ActivityType, Attachment, Builder, Channel, ChannelId, CreateAttachment,
+        CreateChannel, CreateMessage, GuildId, OnlineStatus,
     },
     futures::future::join_all,
 };
@@ -71,5 +75,59 @@ pub async fn refresh_channel(ctx: Context<'_>) -> Result<(), Error> {
     }
 
     ctx.reply("Successfully refreshed!").await?;
+    Ok(())
+}
+
+#[derive(Debug, Clone, Copy, ChoiceParameter)]
+pub enum OnlineStatusChoice {
+    Online,
+    Idle,
+    DoNotDisturb,
+    Invisible,
+    Offline,
+}
+
+#[derive(Debug, Clone, Copy, ChoiceParameter)]
+pub enum ActivityTypeChoice {
+    Playing,
+    Streaming,
+    Listening,
+    Watching,
+    Custom,
+    Competing,
+}
+
+/// Set the bot's rich presence.
+#[poise::command(prefix_command, slash_command)]
+pub async fn change_status(
+    ctx: Context<'_>,
+    #[description = "What should the name of the status be?"] name: String,
+    #[description = "Which online status do you want?"] status: OnlineStatusChoice,
+    #[description = "Which activity type for rich presence do you want?"] kind: ActivityTypeChoice,
+    #[description = "(optional, unless status is Custom) attachment 1"] state: Option<String>,
+    #[description = "(optional, unless status is Streaming) attachment 1"] url: Option<String>,
+) -> Result<(), Error> {
+    ctx.serenity_context().reset_presence();
+    ctx.serenity_context().set_presence(
+        Some(match kind {
+            ActivityTypeChoice::Playing => ActivityData::playing(name),
+            ActivityTypeChoice::Streaming => {
+                ActivityData::streaming(name, url.unwrap_or_default())?
+            }
+            ActivityTypeChoice::Listening => ActivityData::listening(name),
+            ActivityTypeChoice::Watching => ActivityData::watching(name),
+            ActivityTypeChoice::Custom => ActivityData::custom(state.unwrap_or_default()),
+            ActivityTypeChoice::Competing => ActivityData::competing(name),
+        }),
+        match status {
+            OnlineStatusChoice::Online => OnlineStatus::Online,
+            OnlineStatusChoice::Idle => OnlineStatus::Idle,
+            OnlineStatusChoice::DoNotDisturb => OnlineStatus::DoNotDisturb,
+            OnlineStatusChoice::Invisible => OnlineStatus::Invisible,
+            OnlineStatusChoice::Offline => OnlineStatus::Offline,
+        },
+    );
+
+    ctx.reply("Successfully set!").await?;
     Ok(())
 }

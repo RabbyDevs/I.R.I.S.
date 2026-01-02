@@ -8,7 +8,8 @@ mod commands;
 
 use ::serenity::{
     all::{
-        Builder, ChannelId, CreateAttachment, CreateChannel, CreateMessage, GuildId, ReactionType,
+        ActivityData, Builder, ChannelId, CreateAttachment, CreateChannel, CreateMessage, GuildId,
+        ReactionType,
     },
     futures::future::join_all,
 };
@@ -49,7 +50,11 @@ async fn main() {
     // FrameworkOptions contains all of poise's configuration option in one struct
     // Every option can be omitted to use its default value
     let options = poise::FrameworkOptions {
-        commands: vec![commands::send_to_channel(), commands::refresh_channel()],
+        commands: vec![
+            commands::send_to_channel(),
+            commands::refresh_channel(),
+            commands::change_status(),
+        ],
         prefix_options: poise::PrefixFrameworkOptions {
             ..Default::default()
         },
