@@ -101,8 +101,8 @@ pub async fn change_status(
     #[description = "What should the name of the status be?"] name: String,
     #[description = "Which online status do you want?"] status: OnlineStatusChoice,
     #[description = "Which activity type for rich presence do you want?"] kind: ActivityTypeChoice,
-    #[description = "(optional, unless status is Custom) attachment 1"] state: Option<String>,
-    #[description = "(optional, unless status is Streaming) attachment 1"] url: Option<String>,
+    #[description = "(optional) unless status is Custom"] state: Option<String>,
+    #[description = "(optional) unless status is Streaming"] url: Option<String>,
 ) -> Result<(), Error> {
     ctx.serenity_context().reset_presence();
     ctx.serenity_context().set_presence(
