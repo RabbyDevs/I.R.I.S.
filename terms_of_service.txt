@@ -1,0 +1,87 @@
+TERMS OF USE
+Last Updated: [02.11.2026]
+
+1. Acceptance of Terms
+By adding or using the I.R.I.S bot on your Discord server, you agree to these Terms of Use. If you disagree, please remove the bot immediately.
+
+2. Service Description
+I.R.I.S allows server administrators to:
+
+Designate specific channels as "source" and "destination" channels
+
+Enable users to send messages anonymously from source to destination channels
+
+Configure permissions and settings for anonymous messaging
+
+3. Administrator Responsibilities
+Server administrators who add I.R.I.S agree to:
+
+Obtain necessary permissions from server owners
+
+Inform server members about anonymous messaging features
+
+Monitor usage and prevent abuse
+
+Comply with Discord's Terms of Service and Community Guidelines
+
+Not use the bot for harassment, illegal activities, or violating others' rights
+
+4. User Responsibilities
+Users of servers with I.R.I.S agree to:
+
+Not use anonymous messaging for harassment, threats, or illegal content
+
+Respect server rules regarding appropriate content
+
+Not attempt to circumvent anonymity to identify other users
+
+Not spam or abuse the bot functionality
+
+5. Prohibited Content
+The bot may not be used to transmit:
+
+Hate speech, discrimination, or harassment
+
+Threats of violence or harm
+
+Illegal content or activities
+
+Personal information of others without consent
+
+Malicious links or spam
+
+NSFW content in non-NSFW channels
+
+Content violating Discord's Terms of Service
+
+6. Disclaimer of Warranty
+The bot is provided "as is" without warranties of any kind. We do not guarantee:
+
+Continuous, uninterrupted, or error-free service
+
+Security of transmitted messages
+
+Accuracy or appropriateness of anonymous messages
+
+7. Limitation of Liability
+We are not liable for:
+
+Content transmitted through the bot
+
+User disputes arising from anonymous messages
+
+Any damages resulting from bot usage
+
+Actions taken by server administrators using the bot
+
+8. Termination
+We reserve the right to:
+
+Terminate bot access for violating servers
+
+Update or discontinue the bot at any time
+
+Modify these terms with notice via the bot's support server
+
+9. Discord Compliance
+Users must comply with Discord's Terms of Service (https://discord.com/terms) and Community Guidelines (https://discord.com/guidelines).

@@ -1,0 +1,60 @@
+PRIVACY POLICY
+1. Information We Process
+I.R.I.S processes the following data:
+
+For Bot Operation:
+
+Server IDs and channel IDs for configuration
+
+Message content (temporarily, for forwarding)
+
+User IDs (for permission checks, not linked to sent messages)
+
+We Do NOT Store:
+
+Content of forwarded messages after delivery
+
+Identities of anonymous message senders
+
+Message metadata beyond operational needs
+
+Any personal information beyond Discord IDs
+
+2. How We Use Information
+Message Processing: Messages are temporarily held in memory only for forwarding, then discarded
+
+Configuration Storage: Server settings (channel designations, permissions) are stored to maintain functionality
+
+No Tracking: We do not track which users send specific anonymous messages
+
+3. Data Retention
+Forwarded Messages: Not stored; deleted immediately after processing
+
+Configuration Data: Stored until server removes the bot
+
+4. Third-Party Sharing
+We do not share any data with third parties. All processing occurs within our infrastructure solely for bot functionality.
+
+5. Security
+While we implement reasonable security measures:
+
+Anonymous messages are not encrypted in transit (they follow Discord's security)
+
+We cannot guarantee absolute security of transmitted messages
+
+Discord's privacy and security policies apply to message transmission
+
+6. Your Rights
+As a Discord user, you have the right to:
+
+Request removal of the bot from servers you administer
+
+Not use channels where I.R.I.S is active
+
+Report concerns via our support server
+
+7. Children's Privacy
+The bot is not intended for users under 13. Discord requires users to be at least 13, and we comply with this requirement.
+
+8. Changes to Privacy Policy
+We may update this policy. Continued use after changes constitutes acceptance.
