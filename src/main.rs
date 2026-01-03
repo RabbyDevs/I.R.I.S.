@@ -3,13 +3,13 @@
 pub const MAIN_POSTING_CHANNEL_ID: u64 = 1456366697865941054;
 pub const PUBLIC_CATEGORY_ID: u64 = 1456067853374586970;
 pub const GUILD_ID: u64 = 1451378473858895884;
+pub const FILE_UPLOAD_LIMIT: u32 = 95000000;
 
 mod commands;
 
 use ::serenity::{
     all::{
-        ActivityData, Builder, ChannelId, CreateAttachment, CreateChannel, CreateMessage, GuildId,
-        ReactionType,
+        Builder, ChannelId, CreateAttachment, CreateChannel, CreateMessage, GuildId, ReactionType,
     },
     futures::future::join_all,
 };
@@ -101,23 +101,44 @@ async fn main() {
                             .await?;
                     }
 
-                    let files: Vec<CreateAttachment> =
-                        join_all(msg.attachments.iter().map(|attachment| async {
-                            match attachment.download().await {
-                                Ok(file) => {
-                                    Some(CreateAttachment::bytes(file, attachment.filename.clone()))
-                                }
-                                Err(_) => None,
-                            }
-                        }))
-                        .await
-                        .into_iter()
-                        .flatten()
-                        .collect();
+                    let content_base = msg.content.clone();
 
-                    let clone_msg = CreateMessage::new()
-                        .content(msg.content.clone())
-                        .add_files(files);
+                    let results = join_all(msg.attachments.iter().map(|attachment| async move {
+                        if attachment.size > FILE_UPLOAD_LIMIT {
+                            return (None, Some(attachment.url.clone()), 0);
+                        }
+
+                        match attachment.download().await {
+                            Ok(file) => (
+                                Some(CreateAttachment::bytes(file, attachment.filename.clone())),
+                                Some(attachment.url.clone()),
+                                attachment.size,
+                            ),
+                            Err(_) => (None, None, 0),
+                        }
+                    }))
+                    .await;
+
+                    let mut content = content_base;
+                    let mut files = Vec::new();
+                    let mut uploaded_bytes = 0u32;
+
+                    for (file, url, bytes) in results {
+                        uploaded_bytes += bytes;
+                        if let Some(url) = url {
+                            if let Some(file) = file {
+                                if uploaded_bytes > FILE_UPLOAD_LIMIT {
+                                    content.push_str(&format!("\n{}", url));
+                                } else {
+                                    files.push(file);
+                                }
+                            } else {
+                                content.push_str(&format!("\n{}", url));
+                            }
+                        }
+                    }
+
+                    let clone_msg = CreateMessage::new().content(content).add_files(files);
 
                     clone_msg
                         .execute(ctx.http.clone(), (channel_id, None))
