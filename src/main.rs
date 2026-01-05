@@ -1,18 +1,14 @@
 #![warn(clippy::str_to_string)]
 
-pub const MAIN_POSTING_CHANNEL_ID: u64 = 1456366697865941054;
+pub const MAIN_POSTING_CHANNEL_ID: u64 = 1457728499266621664;
 pub const PUBLIC_CATEGORY_ID: u64 = 1456067853374586970;
 pub const GUILD_ID: u64 = 1451378473858895884;
 pub const FILE_UPLOAD_LIMIT: u32 = 95000000;
 
 mod commands;
+mod event_handlers;
 
-use ::serenity::{
-    all::{
-        Builder, ChannelId, CreateAttachment, CreateChannel, CreateMessage, GuildId, ReactionType,
-    },
-    futures::future::join_all,
-};
+use ::serenity::all::{Builder, ChannelId, CreateChannel, GuildId};
 use poise::serenity_prelude as serenity;
 use std::{env::var, sync::Arc};
 use tokio::sync::RwLock;
@@ -84,69 +80,33 @@ async fn main() {
         // Enforce command checks even for owners (enforced by default)
         // Set to true to bypass checks, which is useful for testing
         skip_checks_for_owners: false,
-        event_handler: |ctx, event, _framework, data| {
+        event_handler: |ctx, event, framework, data| {
             Box::pin(async move {
-                if let serenity::FullEvent::ReactionAdd { add_reaction } = event
-                    && add_reaction.channel_id == MAIN_POSTING_CHANNEL_ID
-                    && add_reaction.emoji == ReactionType::Unicode(String::from("✅"))
-                    && add_reaction.message_author_id == add_reaction.user_id
-                {
-                    let channel_id = *data.current_channel.read().await;
-                    let msg = add_reaction.message(ctx.http.clone()).await?;
-
-                    if let Some(reference) = msg.message_reference {
-                        let ref_message = CreateMessage::new().reference_message(reference);
-                        ref_message
-                            .execute(ctx.http.clone(), (channel_id, None))
-                            .await?;
+                match event {
+                    serenity::FullEvent::ReactionAdd { add_reaction } => {
+                        event_handlers::add_reaction(add_reaction, ctx, data).await
                     }
-
-                    let content_base = msg.content.clone();
-
-                    let results = join_all(msg.attachments.iter().map(|attachment| async move {
-                        if attachment.size > FILE_UPLOAD_LIMIT {
-                            return (None, Some(attachment.url.clone()), 0);
-                        }
-
-                        match attachment.download().await {
-                            Ok(file) => (
-                                Some(CreateAttachment::bytes(file, attachment.filename.clone())),
-                                Some(attachment.url.clone()),
-                                attachment.size,
-                            ),
-                            Err(_) => (None, None, 0),
-                        }
-                    }))
-                    .await;
-
-                    let mut content = content_base;
-                    let mut files = Vec::new();
-                    let mut uploaded_bytes = 0u32;
-
-                    for (file, url, bytes) in results {
-                        uploaded_bytes += bytes;
-                        if let Some(url) = url {
-                            if let Some(file) = file {
-                                if uploaded_bytes > FILE_UPLOAD_LIMIT {
-                                    content.push_str(&format!("\n{}", url));
-                                } else {
-                                    files.push(file);
-                                }
-                            } else {
-                                content.push_str(&format!("\n{}", url));
-                            }
-                        }
+                    serenity::FullEvent::MessageUpdate {
+                        old_if_available: _,
+                        new: _,
+                        event,
+                    } => event_handlers::message_update(event, ctx, framework, data).await,
+                    serenity::FullEvent::MessageDelete {
+                        channel_id,
+                        deleted_message_id,
+                        guild_id: _,
+                    } => {
+                        event_handlers::message_delete(
+                            channel_id,
+                            deleted_message_id,
+                            ctx,
+                            framework,
+                            data,
+                        )
+                        .await
                     }
-
-                    let clone_msg = CreateMessage::new().content(content).add_files(files);
-
-                    clone_msg
-                        .execute(ctx.http.clone(), (channel_id, None))
-                        .await?
-                        .crosspost(ctx.http.clone())
-                        .await?;
+                    _ => Ok(()),
                 }
-                Ok(())
             })
         },
         ..Default::default()

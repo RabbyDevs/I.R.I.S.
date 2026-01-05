@@ -1,4 +1,4 @@
-use poise::ChoiceParameter;
+use poise::{ChoiceParameter, CreateReply};
 use serenity::{
     all::{
         ActivityData, Attachment, Builder, Channel, ChannelId, CreateAttachment, CreateChannel,
@@ -48,7 +48,12 @@ pub async fn send_to_channel(
 
     let message = CreateMessage::new().content(content).add_files(files);
     message.execute(ctx.http(), (channel.id(), None)).await?;
-    ctx.reply("Successfully sent!").await?;
+    ctx.send(
+        CreateReply::default()
+            .content("Successfully sent!")
+            .ephemeral(true),
+    )
+    .await?;
     Ok(())
 }
 
