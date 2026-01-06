@@ -1,6 +1,6 @@
 [package]
 name = "iris"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 
 [dependencies]
@@ -9,3 +9,9 @@ reqwest = "0.13.1"
 serenity = "0.12.5"
 tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
 tracing-subscriber = "0.3.22"
+
+[profile.release]
+strip = true      # Automatically strip symbols from the binary.
+lto = true        # Link-time optimization.
+opt-level = 3     # Optimize for speed.
+codegen-units = 1 # Maximum size reduction optimizations.
