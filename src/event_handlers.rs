@@ -3,6 +3,7 @@ use serenity::{
     all::{
         Builder, ChannelId, Context, CreateAttachment, CreateMessage, EditAttachments, EditMessage,
         Message, MessageId, MessageReference, MessageUpdateEvent, Reaction, ReactionType,
+        StickerItem,
     },
     futures::{StreamExt, future::join_all},
 };
@@ -13,6 +14,7 @@ pub struct CloneMessage {
     pub reference: Option<MessageReference>,
     pub content: String,
     pub files: Vec<CreateAttachment>,
+    pub stickers: Vec<StickerItem>,
 }
 
 pub async fn clone_message(msg: &Message) -> CloneMessage {
@@ -20,6 +22,7 @@ pub async fn clone_message(msg: &Message) -> CloneMessage {
         reference: None,
         content: String::new(),
         files: vec![],
+        stickers: vec![],
     };
     if let Some(reference) = msg.message_reference.clone() {
         clone.reference = Some(reference);
@@ -65,6 +68,7 @@ pub async fn clone_message(msg: &Message) -> CloneMessage {
 
     clone.content = content;
     clone.files = files;
+    clone.stickers = msg.sticker_items.clone();
     clone
 }
 
@@ -86,7 +90,8 @@ pub async fn add_reaction(
 
     let mut create_msg = CreateMessage::new()
         .content(clone.content)
-        .add_files(clone.files);
+        .add_files(clone.files)
+        .sticker_ids(clone.stickers.iter().map(|x| x.id).collect::<Vec<_>>());
     if let Some(reference) = clone.reference {
         create_msg = create_msg.reference_message(reference);
     }
