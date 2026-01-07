@@ -4,6 +4,7 @@ pub const MAIN_POSTING_CHANNEL_ID: u64 = 1457958995011698739;
 pub const PUBLIC_CATEGORY_ID: u64 = 1456067853374586970;
 pub const GUILD_ID: u64 = 1451378473858895884;
 pub const FILE_UPLOAD_LIMIT: u32 = 95000000;
+pub const PRUNE_ROLE: u64 = 1458341558112747560;
 
 mod commands;
 mod event_handlers;
@@ -50,6 +51,7 @@ async fn main() {
             commands::send_to_channel(),
             commands::refresh_channel(),
             commands::change_status(),
+            commands::prune(),
         ],
         prefix_options: poise::PrefixFrameworkOptions {
             ..Default::default()

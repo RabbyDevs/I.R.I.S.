@@ -2,12 +2,12 @@ use poise::{ChoiceParameter, CreateReply};
 use serenity::{
     all::{
         ActivityData, Attachment, Builder, Channel, ChannelId, CreateAttachment, CreateChannel,
-        CreateMessage, GuildId, OnlineStatus,
+        CreateMessage, GuildId, OnlineStatus, Timestamp,
     },
-    futures::future::join_all,
+    futures::{StreamExt, future::join_all},
 };
 
-use crate::{Context, Error, GUILD_ID, PUBLIC_CATEGORY_ID};
+use crate::{Context, Error, GUILD_ID, PRUNE_ROLE, PUBLIC_CATEGORY_ID};
 
 #[allow(clippy::too_many_arguments)]
 /// Send an arbitrary message to a channel
@@ -24,6 +24,7 @@ pub async fn send_to_channel(
     #[description = "(optional) attachment 4"] attachment4: Option<Attachment>,
     #[description = "(optional) attachment 5"] attachment5: Option<Attachment>,
 ) -> Result<(), Error> {
+    ctx.defer().await?;
     let attachments = [
         attachment1,
         attachment2,
@@ -61,6 +62,7 @@ pub async fn send_to_channel(
 #[poise::command(prefix_command, slash_command)]
 pub async fn refresh_channel(ctx: Context<'_>) -> Result<(), Error> {
     {
+        ctx.defer().await?;
         let guild = ctx.http().get_guild(GuildId::new(GUILD_ID)).await.unwrap();
         let guild_channels = guild.channels(ctx.http()).await.unwrap();
         let mut current_channel = ctx.data().current_channel.write().await;
@@ -111,6 +113,7 @@ pub async fn change_status(
     #[description = "(optional) unless status is Custom"] state: Option<String>,
     #[description = "(optional) unless status is Streaming"] url: Option<String>,
 ) -> Result<(), Error> {
+    ctx.defer().await?;
     ctx.serenity_context().reset_presence();
     ctx.serenity_context().set_presence(
         Some(match kind {
@@ -133,5 +136,29 @@ pub async fn change_status(
     );
 
     ctx.reply("Successfully set!").await?;
+    Ok(())
+}
+
+/// Prune old unverified users.
+#[poise::command(prefix_command, slash_command)]
+pub async fn prune(ctx: Context<'_>) -> Result<(), Error> {
+    ctx.defer().await?;
+    if let Some(guild) = ctx.guild_id() {
+        println!("hai");
+        let mut members = guild.members_iter(ctx.http()).boxed();
+
+        while let Some(member_maybe) = members.next().await {
+            let member = member_maybe?;
+            if member.roles == vec![PRUNE_ROLE]
+                && let Some(timestamp) = member.joined_at
+                && let Some(adjusted_time) = timestamp.checked_add_days(chrono::Days::new(3))
+                && adjusted_time.timestamp() < Timestamp::now().timestamp()
+            {
+                member.kick(ctx.http()).await?
+            }
+        }
+    };
+
+    ctx.reply("Pruned!").await?;
     Ok(())
 }
