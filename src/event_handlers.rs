@@ -2,8 +2,8 @@ use poise::FrameworkContext;
 use serenity::{
     all::{
         Builder, ChannelId, Context, CreateAttachment, CreateMessage, EditAttachments, EditMessage,
-        Message, MessageId, MessageReference, MessageUpdateEvent, Reaction, ReactionType,
-        StickerItem,
+        Message, MessageId, MessageReference, MessageReferenceKind, MessageUpdateEvent, Reaction,
+        ReactionType, StickerItem,
     },
     futures::{StreamExt, future::join_all},
 };
@@ -26,7 +26,6 @@ pub async fn clone_message(msg: &Message) -> CloneMessage {
     };
     if let Some(reference) = msg.message_reference.clone() {
         clone.reference = Some(reference);
-        return clone;
     }
 
     let content_base = msg.content.clone();
@@ -75,6 +74,7 @@ pub async fn clone_message(msg: &Message) -> CloneMessage {
 pub async fn add_reaction(
     add_reaction: &Reaction,
     ctx: &Context,
+    framework: FrameworkContext<'_, Data, Error>,
     data: &Data,
 ) -> Result<(), Error> {
     if add_reaction.channel_id != MAIN_POSTING_CHANNEL_ID
@@ -87,19 +87,60 @@ pub async fn add_reaction(
     let msg = add_reaction.message(ctx.http.clone()).await?;
 
     let clone = clone_message(&msg).await;
+    println!("{}", clone.content);
 
-    let mut create_msg = CreateMessage::new()
-        .content(clone.content)
+    let mut create_msg = CreateMessage::new();
+
+    if let Some(reference) = clone.reference {
+        match reference.kind {
+            serenity::all::MessageReferenceKind::Default => {
+                let mut messages = ChannelId::new(MAIN_POSTING_CHANNEL_ID)
+                    .messages_iter(&ctx)
+                    .boxed();
+
+                while let Some(message_result) = messages.next().await {
+                    let message = message_result?;
+                    if message.author.id == framework.bot_id
+                        && let Some(bot_reference) = message.referenced_message
+                        && let Some(main_ref_id) = reference.message_id
+                        && bot_reference.id == main_ref_id
+                        && let Some((first, _)) = message.content.split_once(':')
+                        && let Ok(parsed) = first.parse::<u64>()
+                    {
+                        create_msg = create_msg.reference_message(
+                            MessageReference::new(
+                                serenity::all::MessageReferenceKind::Default,
+                                leaks_channel_id,
+                            )
+                            .message_id(MessageId::new(parsed)),
+                        );
+                    }
+                }
+            }
+            serenity::all::MessageReferenceKind::Forward => {
+                create_msg = create_msg.reference_message(reference)
+            }
+            serenity::all::MessageReferenceKind::Unknown(_) => {}
+            _ => todo!(),
+        };
+    }
+
+    create_msg = create_msg
+        .content(clone.content.clone())
         .add_files(clone.files)
         .sticker_ids(clone.stickers.iter().map(|x| x.id).collect::<Vec<_>>());
-    if let Some(reference) = clone.reference {
-        create_msg = create_msg.reference_message(reference);
-    }
+
     let final_msg = create_msg
         .execute(ctx.http.clone(), (leaks_channel_id, None))
-        .await?
-        .crosspost(ctx.http.clone())
         .await?;
+
+    if final_msg
+        .message_reference
+        .clone()
+        .is_none_or(|x| x.kind != MessageReferenceKind::Default)
+    {
+        final_msg.crosspost(ctx.http.clone()).await?;
+    }
 
     msg.reply(ctx.http.clone(), format!("{}:{}", final_msg.id, msg.id))
         .await?;

@@ -1,7 +1,7 @@
 #![warn(clippy::str_to_string)]
 
-pub const MAIN_POSTING_CHANNEL_ID: u64 = 1457958995011698739;
-pub const PUBLIC_CATEGORY_ID: u64 = 1456067853374586970;
+pub const MAIN_POSTING_CHANNEL_ID: u64 = 1458243768208850954;
+pub const PUBLIC_CATEGORY_ID: u64 = 1457742952972423280;
 pub const GUILD_ID: u64 = 1451378473858895884;
 pub const FILE_UPLOAD_LIMIT: u32 = 95000000;
 
@@ -84,7 +84,7 @@ async fn main() {
             Box::pin(async move {
                 match event {
                     serenity::FullEvent::ReactionAdd { add_reaction } => {
-                        event_handlers::add_reaction(add_reaction, ctx, data).await
+                        event_handlers::add_reaction(add_reaction, ctx, framework, data).await
                     }
                     serenity::FullEvent::MessageUpdate {
                         old_if_available: _,
