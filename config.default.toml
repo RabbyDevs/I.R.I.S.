@@ -1,0 +1,7 @@
+discord_token = ""
+sent_channel_name = "leaks"
+main_posting_channel_id = 1457958995011698739
+public_category_id = 1456067853374586970
+guild_id = 1451378473858895884
+file_upload_limit = 95000000
+prune_role = 1458341558112747560
