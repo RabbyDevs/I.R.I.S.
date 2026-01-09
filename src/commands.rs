@@ -7,7 +7,7 @@ use serenity::{
     futures::{StreamExt, future::join_all},
 };
 
-use crate::{Context, Error, GUILD_ID, PRUNE_ROLE, PUBLIC_CATEGORY_ID};
+use crate::{Context, Error, config::get_config};
 
 #[allow(clippy::too_many_arguments)]
 /// Send an arbitrary message to a channel
@@ -63,16 +63,21 @@ pub async fn send_to_channel(
 pub async fn refresh_channel(ctx: Context<'_>) -> Result<(), Error> {
     {
         ctx.defer().await?;
-        let guild = ctx.http().get_guild(GuildId::new(GUILD_ID)).await.unwrap();
+        let guild = ctx
+            .http()
+            .get_guild(GuildId::new(get_config().guild_id))
+            .await
+            .unwrap();
         let guild_channels = guild.channels(ctx.http()).await.unwrap();
         let mut current_channel = ctx.data().current_channel.write().await;
         *current_channel = match guild_channels.iter().find(|x| {
-            x.1.name == "leaks" && x.1.parent_id == Some(ChannelId::new(PUBLIC_CATEGORY_ID))
+            x.1.name == get_config().sent_channel_name
+                && x.1.parent_id == Some(ChannelId::new(get_config().public_category_id))
         }) {
             Some((channel_id, _)) => *channel_id,
             None => {
-                let channel = CreateChannel::new("leaks")
-                    .category(PUBLIC_CATEGORY_ID)
+                let channel = CreateChannel::new(get_config().sent_channel_name.clone())
+                    .category(get_config().public_category_id)
                     .kind(serenity::all::ChannelType::News);
                 let channel = channel.execute(ctx.http(), guild.id).await.unwrap();
                 channel.id
@@ -149,7 +154,7 @@ pub async fn prune(ctx: Context<'_>) -> Result<(), Error> {
 
         while let Some(member_maybe) = members.next().await {
             let member = member_maybe?;
-            if member.roles == vec![PRUNE_ROLE]
+            if member.roles == vec![get_config().prune_role]
                 && let Some(timestamp) = member.joined_at
                 && let Some(adjusted_time) = timestamp.checked_add_days(chrono::Days::new(3))
                 && adjusted_time.timestamp() < Timestamp::now().timestamp()

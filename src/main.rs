@@ -1,18 +1,16 @@
 #![warn(clippy::str_to_string)]
 
-pub const MAIN_POSTING_CHANNEL_ID: u64 = 1457958995011698739;
-pub const PUBLIC_CATEGORY_ID: u64 = 1456067853374586970;
-pub const GUILD_ID: u64 = 1451378473858895884;
-pub const FILE_UPLOAD_LIMIT: u32 = 95000000;
-pub const PRUNE_ROLE: u64 = 1458341558112747560;
-
 mod commands;
+mod config;
+mod config_util;
 mod event_handlers;
 
 use ::serenity::all::{Builder, ChannelId, CreateChannel, GuildId};
 use poise::serenity_prelude as serenity;
-use std::{env::var, sync::Arc};
+use std::sync::Arc;
 use tokio::sync::RwLock;
+
+use crate::config::get_config;
 
 // Types used by all command functions
 type Error = Box<dyn std::error::Error + Send + Sync>;
@@ -73,7 +71,7 @@ async fn main() {
         // Every command invocation must pass this check to continue execution
         command_check: Some(|ctx| {
             Box::pin(async move {
-                if ctx.guild().is_none_or(|x| x.id != GUILD_ID) {
+                if ctx.guild().is_none_or(|x| x.id != get_config().guild_id) {
                     return Ok(false);
                 }
                 Ok(true)
@@ -122,17 +120,18 @@ async fn main() {
                 let guild = ctx
                     .http
                     .clone()
-                    .get_guild(GuildId::new(GUILD_ID))
+                    .get_guild(GuildId::new(get_config().guild_id))
                     .await
                     .unwrap();
                 let guild_channels = guild.channels(ctx.http.clone()).await?;
                 let leaks_channel_id = match guild_channels.iter().find(|x| {
-                    x.1.name == "leaks" && x.1.parent_id == Some(ChannelId::new(PUBLIC_CATEGORY_ID))
+                    x.1.name == get_config().sent_channel_name
+                        && x.1.parent_id == Some(ChannelId::new(get_config().public_category_id))
                 }) {
                     Some((channel_id, _)) => *channel_id,
                     None => {
-                        let channel = CreateChannel::new("leaks")
-                            .category(PUBLIC_CATEGORY_ID)
+                        let channel = CreateChannel::new(get_config().sent_channel_name.clone())
+                            .category(get_config().public_category_id)
                             .kind(serenity::ChannelType::News);
                         let channel = channel.execute(ctx.http.clone(), guild.id).await?;
                         channel.id
@@ -147,8 +146,7 @@ async fn main() {
         .options(options)
         .build();
 
-    let token = var("DISCORD_TOKEN")
-        .expect("Missing `DISCORD_TOKEN` env var, see README for more information.");
+    let token = get_config().discord_token.clone();
     let intents =
         serenity::GatewayIntents::non_privileged() | serenity::GatewayIntents::MESSAGE_CONTENT;
 

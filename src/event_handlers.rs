@@ -8,7 +8,7 @@ use serenity::{
     futures::{StreamExt, future::join_all},
 };
 
-use crate::{Data, Error, FILE_UPLOAD_LIMIT, MAIN_POSTING_CHANNEL_ID};
+use crate::{Data, Error, config::get_config};
 
 pub struct CloneMessage {
     pub reference: Option<MessageReference>,
@@ -31,7 +31,7 @@ pub async fn clone_message(msg: &Message) -> CloneMessage {
     let content_base = msg.content.clone();
 
     let results = join_all(msg.attachments.iter().map(|attachment| async move {
-        if attachment.size > FILE_UPLOAD_LIMIT {
+        if attachment.size > get_config().file_upload_limit {
             return (None, Some(attachment.url.clone()), 0);
         }
 
@@ -54,7 +54,7 @@ pub async fn clone_message(msg: &Message) -> CloneMessage {
         uploaded_bytes += bytes;
         if let Some(url) = url {
             if let Some(file) = file {
-                if uploaded_bytes > FILE_UPLOAD_LIMIT {
+                if uploaded_bytes > get_config().file_upload_limit {
                     content.push_str(&format!("\n{}", url));
                 } else {
                     files.push(file);
@@ -77,7 +77,7 @@ pub async fn add_reaction(
     framework: FrameworkContext<'_, Data, Error>,
     data: &Data,
 ) -> Result<(), Error> {
-    if add_reaction.channel_id != MAIN_POSTING_CHANNEL_ID
+    if add_reaction.channel_id != get_config().main_posting_channel_id
         || add_reaction.emoji != ReactionType::Unicode(String::from("✅"))
         || add_reaction.message_author_id != add_reaction.user_id
     {
@@ -87,14 +87,13 @@ pub async fn add_reaction(
     let msg = add_reaction.message(ctx.http.clone()).await?;
 
     let clone = clone_message(&msg).await;
-    println!("{}", clone.content);
 
     let mut create_msg = CreateMessage::new();
 
     if let Some(reference) = clone.reference {
         match reference.kind {
             serenity::all::MessageReferenceKind::Default => {
-                let mut messages = ChannelId::new(MAIN_POSTING_CHANNEL_ID)
+                let mut messages = ChannelId::new(get_config().main_posting_channel_id)
                     .messages_iter(&ctx)
                     .boxed();
 
@@ -154,15 +153,15 @@ pub async fn message_update(
     data: &Data,
 ) -> Result<(), Error> {
     let leaks_channel_id = *data.current_channel.read().await;
-    if event.channel_id != MAIN_POSTING_CHANNEL_ID {
+    if event.channel_id != get_config().main_posting_channel_id {
         return Ok(());
     }
 
-    let new_message = ChannelId::new(MAIN_POSTING_CHANNEL_ID)
+    let new_message = ChannelId::new(get_config().main_posting_channel_id)
         .message(ctx.http.clone(), event.id)
         .await?;
 
-    let mut messages = ChannelId::new(MAIN_POSTING_CHANNEL_ID)
+    let mut messages = ChannelId::new(get_config().main_posting_channel_id)
         .messages_iter(&ctx)
         .boxed();
 
@@ -200,11 +199,11 @@ pub async fn message_delete(
     data: &Data,
 ) -> Result<(), Error> {
     let leaks_channel_id = *data.current_channel.read().await;
-    if *channel_id != MAIN_POSTING_CHANNEL_ID {
+    if *channel_id != get_config().main_posting_channel_id {
         return Ok(());
     }
 
-    let mut messages = ChannelId::new(MAIN_POSTING_CHANNEL_ID)
+    let mut messages = ChannelId::new(get_config().main_posting_channel_id)
         .messages_iter(&ctx)
         .boxed();
 
